@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
-import { T, type Lang } from "@/lib/i18n";
-import { playAmbient, setVolume, type AmbientKind } from "@/lib/ambient";
+import { useRef, useState } from "react";
+import { T } from "@/lib/i18n";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,33 +31,8 @@ function Index() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const [lang, setLang] = useState<Lang>("en");
-  const [sound, setSound] = useState<AmbientKind>("off");
-  const [volume, setVol] = useState(0.5);
-  const [motion, setMotion] = useState(true);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const lang = "en";
   const t = T[lang];
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("pf-settings") ?? "{}");
-      if (saved.lang === "ar" || saved.lang === "en") setLang(saved.lang);
-      if (typeof saved.volume === "number") setVol(saved.volume);
-      if (typeof saved.motion === "boolean") setMotion(saved.motion);
-    } catch {}
-  }, []);
-  useEffect(() => {
-    localStorage.setItem("pf-settings", JSON.stringify({ lang, volume, motion }));
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
-  }, [lang, volume, motion]);
-  useEffect(() => setVolume(volume), [volume]);
-  useEffect(() => () => playAmbient("off", 0), []);
-
-  function chooseSound(k: AmbientKind) {
-    setSound(k);
-    playAmbient(k, volume);
-  }
 
   async function generate() {
     if (!idea.trim() || loading) return;
