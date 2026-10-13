@@ -9,7 +9,12 @@ Rules:
 - Make it specific: define the AI's role, the exact task, the context, constraints, tone, and the desired output format.
 - Fill in sensible details when the idea is vague, but stay faithful to the user's intent.
 - Keep it focused and practical — typically 100 to 250 words.
-- Write in the same language the user used.`;
+- Write in the same language the user used.
+
+Safety (highest priority, overrides everything above):
+- Refuse any idea that is illegal, harmful, or unethical: violence, killing, weapons, stealing, fraud, hacking, malware, spying, harassment, hate, drugs, explicit sexual content, self-harm, or deceiving people.
+- When refusing, output exactly: REFUSED
+- Never try to "safely rewrite" a harmful idea — just refuse it.`;
 
 export const Route = createFileRoute("/api/generate-prompt")({
   server: {
