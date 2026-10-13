@@ -150,6 +150,7 @@
   background-size: 56px 56px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
   animation: grid-pan 12s linear infinite;
+  will-change: transform;
 }
 .bg-scene.paused * { animation-play-state: paused; }
 @keyframes drift-1 { to { transform: translate(260px, 180px) scale(1.15); } }
