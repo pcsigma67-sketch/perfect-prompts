@@ -231,8 +231,44 @@ function Index() {
           </section>
         )}
 
-        <footer className="mt-auto pt-16 text-center text-xs text-muted-foreground">
-          Rough idea in → perfect prompt out.
+        <footer className="mt-auto pt-16">
+          <div className="animate-fade-up rounded-xl border border-border bg-card p-6 text-center">
+            <h2 className="font-display text-sm font-semibold tracking-wide text-foreground uppercase">
+              About PromptForge
+            </h2>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+              PromptForge was designed and built by <span className="font-medium text-foreground">Ahmad Zaxo</span>, a
+              high school student with a passion for AI — turning rough, everyday ideas into prompts that actually work.
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <a
+                href="https://instagram.com/4hmadzaxo7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:border-primary/50 hover:bg-accent"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                  aria-hidden="true"
+                >
+                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+                </svg>
+                @4hmadzaxo7
+              </a>
+            </div>
+          </div>
+          <p className="mt-6 pb-2 text-center text-xs text-muted-foreground">
+            Rough idea in → perfect prompt out.
+          </p>
         </footer>
       </div>
     </div>
