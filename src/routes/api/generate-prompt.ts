@@ -36,6 +36,14 @@ export const Route = createFileRoute("/api/generate-prompt")({
           return Response.json({ error: "Your idea is too long — keep it under 4000 characters." }, { status: 400 });
         }
 
+        const blocked = /(kill|murder|steal|theft|rob|hack|hacking|malware|virus|phish|scam|fraud|bomb|weapon|gun|drug|cocaine|heroin|terror|suicide|self.?harm|porn|nude|sexual|harass|blackmail|spy|stalk|crack password|ddos|ransomware|قتل|سرق|اختراق|تهكير|سلاح|مخدرات|قنبلة|انتحار)/i;
+        if (blocked.test(idea)) {
+          return Response.json(
+            { error: "Sorry, I can't help with that. PromptForge only creates prompts for legal and ethical ideas." },
+            { status: 400 },
+          );
+        }
+
         const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) {
           return Response.json({ error: "AI is not configured yet. Please try again later." }, { status: 500 });
