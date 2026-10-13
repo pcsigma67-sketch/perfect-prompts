@@ -35,26 +35,26 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.14 0.015 60);
-  --foreground: oklch(0.93 0.02 80);
-  --card: oklch(0.18 0.018 60);
-  --card-foreground: oklch(0.93 0.02 80);
-  --popover: oklch(0.18 0.018 60);
-  --popover-foreground: oklch(0.93 0.02 80);
-  --primary: oklch(0.78 0.16 75);
-  --primary-foreground: oklch(0.16 0.02 60);
-  --secondary: oklch(0.22 0.02 60);
-  --secondary-foreground: oklch(0.93 0.02 80);
-  --muted: oklch(0.22 0.02 60);
-  --muted-foreground: oklch(0.62 0.02 70);
-  --accent: oklch(0.26 0.03 65);
-  --accent-foreground: oklch(0.93 0.02 80);
-  --destructive: oklch(0.65 0.2 25);
+  --radius: 0.875rem;
+  --background: oklch(0.17 0.018 240);
+  --foreground: oklch(0.95 0.008 230);
+  --card: oklch(0.21 0.02 240);
+  --card-foreground: oklch(0.95 0.008 230);
+  --popover: oklch(0.21 0.02 240);
+  --popover-foreground: oklch(0.95 0.008 230);
+  --primary: oklch(0.8 0.08 180);
+  --primary-foreground: oklch(0.18 0.02 220);
+  --secondary: oklch(0.25 0.02 240);
+  --secondary-foreground: oklch(0.95 0.008 230);
+  --muted: oklch(0.25 0.02 240);
+  --muted-foreground: oklch(0.68 0.02 235);
+  --accent: oklch(0.29 0.025 230);
+  --accent-foreground: oklch(0.95 0.008 230);
+  --destructive: oklch(0.65 0.17 25);
   --destructive-foreground: oklch(0.95 0.02 80);
-  --border: oklch(0.28 0.02 60);
-  --input: oklch(0.28 0.02 60);
-  --ring: oklch(0.78 0.16 75);
+  --border: oklch(0.3 0.02 240);
+  --input: oklch(0.3 0.02 240);
+  --ring: oklch(0.8 0.08 180);
 }
 
 @layer base {
@@ -65,11 +65,12 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Manrope", system-ui, sans-serif;
   }
 
   .font-display {
-    font-family: "Space Grotesk", "Inter", system-ui, sans-serif;
+    font-family: "Instrument Serif", Georgia, serif;
+    font-weight: 400;
   }
 
   .font-mono-output {
@@ -79,7 +80,7 @@
 
 @layer utilities {
   .glow-primary {
-    box-shadow: 0 0 40px -8px color-mix(in oklab, var(--primary) 45%, transparent);
+    box-shadow: 0 0 40px -8px color-mix(in oklab, var(--primary) 25%, transparent);
   }
 
   .text-glow {
@@ -88,9 +89,10 @@
 
   .bg-grid {
     background-image:
-      linear-gradient(to right, color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 4%, transparent) 1px, transparent 1px);
-    background-size: 48px 48px;
+      radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in oklab, var(--primary) 14%, transparent), transparent 70%),
+      linear-gradient(to right, color-mix(in oklab, var(--foreground) 2.5%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklab, var(--foreground) 2.5%, transparent) 1px, transparent 1px);
+    background-size: 100% 100%, 56px 56px, 56px 56px;
   }
 
   .animate-blink {
@@ -110,4 +112,10 @@
     from { opacity: 0; transform: translateY(12px); }
     to { opacity: 1; transform: translateY(0); }
   }
+}
+
+@utility glass {
+  background: color-mix(in oklab, var(--card) 70%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 20px 50px -20px color-mix(in oklab, var(--background) 80%, black);
 }
