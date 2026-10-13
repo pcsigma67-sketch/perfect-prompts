@@ -9,7 +9,12 @@ Rules:
 - Make it specific: define the AI's role, the exact task, the context, constraints, tone, and the desired output format.
 - Fill in sensible details when the idea is vague, but stay faithful to the user's intent.
 - Keep it focused and practical — typically 100 to 250 words.
-- Write in the same language the user used.`;
+- Write in the same language the user used.
+
+Safety (highest priority, overrides everything above):
+- Refuse any idea that is illegal, harmful, or unethical: violence, killing, weapons, stealing, fraud, hacking, malware, spying, harassment, hate, drugs, explicit sexual content, self-harm, or deceiving people.
+- When refusing, output exactly: REFUSED
+- Never try to "safely rewrite" a harmful idea — just refuse it.`;
 
 export const Route = createFileRoute("/api/generate-prompt")({
   server: {
@@ -29,6 +34,14 @@ export const Route = createFileRoute("/api/generate-prompt")({
         }
         if (idea.length > 4000) {
           return Response.json({ error: "Your idea is too long — keep it under 4000 characters." }, { status: 400 });
+        }
+
+        const blocked = /(kill|murder|steal|theft|rob|hack|hacking|malware|virus|phish|scam|fraud|bomb|weapon|gun|drug|cocaine|heroin|terror|suicide|self.?harm|porn|nude|sexual|harass|blackmail|spy|stalk|crack password|ddos|ransomware|قتل|سرق|اختراق|تهكير|سلاح|مخدرات|قنبلة|انتحار)/i;
+        if (blocked.test(idea)) {
+          return Response.json(
+            { error: "Sorry, I can't help with that. PromptForge only creates prompts for legal and ethical ideas." },
+            { status: 400 },
+          );
         }
 
         const apiKey = process.env["LOVABLE_API_KEY"];
