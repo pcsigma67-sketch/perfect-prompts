@@ -29,7 +29,7 @@ export const Route = createFileRoute("/api/generate-prompt")({
           return Response.json({ error: "Your idea is too long — keep it under 4000 characters." }, { status: 400 });
         }
 
-        const apiKey = process.env.LOVABLE_API_KEY;
+        const apiKey = process.env["LOVABLE_API_KEY"];
         if (!apiKey) {
           return Response.json({ error: "AI is not configured yet. Please try again later." }, { status: 500 });
         }
