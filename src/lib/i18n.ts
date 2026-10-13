@@ -37,6 +37,9 @@ export const T = {
     motion: "Moving background",
     on: "On",
     close: "Close",
+    welcomeTitle: "Welcome to PromptForge",
+    welcomeSub: "Pick your language and a calm background sound before you start.",
+    welcomeStart: "Start forging",
   },
   ar: {
     about: "من نحن",
@@ -74,5 +77,8 @@ export const T = {
     motion: "خلفية متحركة",
     on: "تشغيل",
     close: "إغلاق",
+    welcomeTitle: "مرحباً بك في PromptForge",
+    welcomeSub: "اختر لغتك وصوتاً هادئاً للخلفية قبل أن تبدأ.",
+    welcomeStart: "ابدأ الآن",
   },
 } as const;

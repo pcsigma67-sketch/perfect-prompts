@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useRef, useState } from "react";
-import { T } from "@/lib/i18n";
+import { useEffect, useRef, useState } from "react";
+import { T, type Lang } from "@/lib/i18n";
+import { playAmbient, setVolume, type AmbientKind } from "@/lib/ambient";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,6 +25,19 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+type Settings = { lang: Lang; sound: AmbientKind; volume: number; motion: boolean };
+const DEFAULTS: Settings = { lang: "en", sound: "off", volume: 0.5, motion: true };
+
+function loadSettings(): Settings | null {
+  try {
+    const raw = localStorage.getItem("pf-settings");
+    if (!raw) return null;
+    return { ...DEFAULTS, ...JSON.parse(raw) };
+  } catch {
+    return null;
+  }
+}
+
 function Index() {
   const [idea, setIdea] = useState("");
   const [prompt, setPrompt] = useState("");
@@ -31,8 +45,49 @@ function Index() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
-  const lang = "en";
+
+  const [settings, setSettings] = useState<Settings>(DEFAULTS);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Load saved settings after hydration; show the welcome chooser on first visit.
+  useEffect(() => {
+    const saved = loadSettings();
+    if (saved) setSettings(saved);
+    else setWelcomeOpen(true);
+    setHydrated(true);
+  }, []);
+
+  const { lang, sound, volume, motion } = settings;
   const t = T[lang];
+
+  function update(patch: Partial<Settings>) {
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      try {
+        localStorage.setItem("pf-settings", JSON.stringify(next));
+      } catch {
+        // storage unavailable
+      }
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (!hydrated) return;
+    playAmbient(sound, volume);
+  }, [sound, volume, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = lang;
+  }, [lang, hydrated]);
+
+  function chooseSound(kind: AmbientKind) {
+    update({ sound: kind });
+  }
 
   async function generate() {
     if (!idea.trim() || loading) return;
@@ -145,6 +200,49 @@ function Index() {
         </div>
       </nav>
 
+      {welcomeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm animate-in fade-in">
+          <div className="panel w-full max-w-md rounded-2xl border border-border p-8 text-center shadow-2xl animate-in zoom-in-95">
+            <span className="font-display text-3xl" dir="ltr">Prompt<span className="italic text-primary">Forge</span></span>
+            <h2 className="font-display mt-4 text-2xl">{t.welcomeTitle}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t.welcomeSub}</p>
+
+            <p className="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.language}</p>
+            <div className="flex gap-2">
+              {([["en", "English"], ["ar", "العربية"]] as [Lang, string][]).map(([v, label]) => (
+                <button
+                  key={v}
+                  onClick={() => update({ lang: v })}
+                  className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${lang === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 text-muted-foreground hover:text-foreground"}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <p className="mt-5 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.sound}</p>
+            <div className="flex gap-2">
+              {([["rain", t.rain, "🌧"], ["fire", t.fire, "🔥"], ["off", t.off, "🔇"]] as [AmbientKind, string, string][]).map(([v, label, icon]) => (
+                <button
+                  key={v}
+                  onClick={() => chooseSound(v)}
+                  className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${sound === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 text-muted-foreground hover:text-foreground"}`}
+                >
+                  <span className="mr-1" aria-hidden>{icon}</span>{label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setWelcomeOpen(false)}
+              className="mt-7 w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
+            >
+              {t.welcomeStart}
+            </button>
+          </div>
+        </div>
+      )}
+
       {settingsOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-background/60 p-4 pt-20 backdrop-blur-sm animate-in fade-in" onClick={() => setSettingsOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 slide-in-from-top-2" onClick={(e) => e.stopPropagation()}>
@@ -153,16 +251,16 @@ function Index() {
               <button onClick={() => setSettingsOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">{t.close}</button>
             </div>
             <SettingRow label={t.language}>
-              <Segmented value={lang} onChange={(v) => setLang(v as Lang)} options={[["en", "English"], ["ar", "العربية"]]} />
+              <Segmented value={lang} onChange={(v) => update({ lang: v as Lang })} options={[["en", "English"], ["ar", "العربية"]]} />
             </SettingRow>
             <SettingRow label={t.sound}>
               <Segmented value={sound} onChange={(v) => chooseSound(v as AmbientKind)} options={[["off", t.off], ["rain", t.rain], ["fire", t.fire]]} />
             </SettingRow>
             <SettingRow label={`${t.volume} · ${Math.round(volume * 100)}%`}>
-              <input type="range" min={0} max={1} step={0.01} value={volume} onChange={(e) => setVol(Number(e.target.value))} className="w-full accent-primary" />
+              <input type="range" min={0} max={1} step={0.01} value={volume} onChange={(e) => { update({ volume: Number(e.target.value) }); setVolume(Number(e.target.value)); }} className="w-full accent-primary" />
             </SettingRow>
             <SettingRow label={t.motion}>
-              <Segmented value={motion ? "on" : "off"} onChange={(v) => setMotion(v === "on")} options={[["on", t.on], ["off", t.off]]} />
+              <Segmented value={motion ? "on" : "off"} onChange={(v) => update({ motion: v === "on" })} options={[["on", t.on], ["off", t.off]]} />
             </SettingRow>
           </div>
         </div>
