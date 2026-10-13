@@ -139,7 +139,15 @@ function Index() {
             try {
               const json = JSON.parse(payload);
               if (json.type === "response.output_text.delta" && typeof json.delta === "string") {
-                setPrompt((prev) => prev + json.delta);
+                setPrompt((prev) => {
+                  const next = prev + json.delta;
+                  if (next.trim().startsWith("REFUSED")) {
+                    setError("Sorry, I can't help with that. PromptForge only creates prompts for legal and ethical ideas.");
+                    controller.abort();
+                    return "";
+                  }
+                  return next;
+                });
               } else if (json.type === "response.failed" || json.type === "error") {
                 setError(json?.response?.error?.message ?? json?.message ?? "Generation failed. Please try again.");
               }
