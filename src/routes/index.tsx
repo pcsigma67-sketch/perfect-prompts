@@ -1,24 +1,240 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useRef, useState } from "react";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "PromptForge — Turn rough ideas into perfect AI prompts" },
+      {
+        name: "description",
+        content:
+          "Describe what you want an AI to do in your own words, and PromptForge rewrites it into a clear, complete, ready-to-use prompt.",
+      },
+      { property: "og:title", content: "PromptForge — Turn rough ideas into perfect AI prompts" },
+      {
+        property: "og:description",
+        content:
+          "Describe what you want an AI to do in your own words, and PromptForge rewrites it into a clear, complete, ready-to-use prompt.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
+const EXAMPLES = [
+  "I want an AI to help me write birthday messages for my friends that don't sound boring",
+  "Make something that explains hard school topics to me like I'm 10 years old",
+  "I need an AI to act as a job interviewer for a marketing position and ask me tough questions",
+];
+
 function Index() {
+  const [idea, setIdea] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+
+  async function generate() {
+    if (!idea.trim() || loading) return;
+    setLoading(true);
+    setError("");
+    setPrompt("");
+    setCopied(false);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/generate-prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea: idea.trim() }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        let message = "Something went wrong. Please try again.";
+        try {
+          const data = await res.json();
+          if (typeof data?.error === "string") message = data.error;
+        } catch {
+          // keep default
+        }
+        setError(message);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const events = buffer.split("\n\n");
+        buffer = events.pop() ?? "";
+
+        for (const event of events) {
+          for (const line of event.split("\n")) {
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (!payload || payload === "[DONE]") continue;
+            try {
+              const json = JSON.parse(payload);
+              if (json.type === "response.output_text.delta" && typeof json.delta === "string") {
+                setPrompt((prev) => prev + json.delta);
+              } else if (json.type === "response.failed" || json.type === "error") {
+                setError(json?.response?.error?.message ?? json?.message ?? "Generation failed. Please try again.");
+              }
+            } catch {
+              // ignore malformed chunk
+            }
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      setError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setLoading(false);
+      abortRef.current = null;
+    }
+  }
+
+  function stop() {
+    abortRef.current?.abort();
+    setLoading(false);
+  }
+
+  async function copyPrompt() {
+    if (!prompt) return;
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setError("Could not copy — select the text and copy it manually.");
+    }
+  }
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="bg-grid min-h-screen">
+      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 py-10 sm:px-6 sm:py-16">
+        {/* Header */}
+        <header className="animate-fade-up text-center">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+            AI Prompt Builder
+          </div>
+          <h1 className="font-display text-4xl font-bold tracking-tight sm:text-6xl">
+            Prompt<span className="text-primary text-glow">Forge</span>
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
+            Tell me what you want an AI to do — in your own messy words — and I'll forge it into a
+            clear, professional prompt you can use anywhere.
+          </p>
+        </header>
+
+        {/* Input */}
+        <section className="animate-fade-up mt-10" style={{ animationDelay: "0.1s" }}>
+          <label htmlFor="idea" className="mb-2 block text-sm font-medium text-foreground">
+            Your rough idea
+          </label>
+          <textarea
+            id="idea"
+            value={idea}
+            onChange={(e) => setIdea(e.target.value)}
+            placeholder="e.g. I want an AI that helps me plan my weekly meals but I hate cooking complicated stuff..."
+            rows={4}
+            maxLength={4000}
+            className="w-full resize-none rounded-xl border border-input bg-card p-4 text-base text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/30 focus:outline-none"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generate();
+            }}
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {loading ? (
+              <button
+                onClick={stop}
+                className="rounded-lg border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-accent"
+              >
+                Stop
+              </button>
+            ) : (
+              <button
+                onClick={generate}
+                disabled={!idea.trim()}
+                className="glow-primary rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+              >
+                Forge my prompt
+              </button>
+            )}
+            <span className="text-xs text-muted-foreground">Ctrl + Enter to generate</span>
+          </div>
+
+          {/* Examples */}
+          <div className="mt-6">
+            <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Try an example
+            </p>
+            <div className="flex flex-col gap-2">
+              {EXAMPLES.map((example) => (
+                <button
+                  key={example}
+                  onClick={() => setIdea(example)}
+                  className="rounded-lg border border-border bg-card px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                >
+                  {example}
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Error */}
+        {error && (
+          <div className="mt-8 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive-foreground">
+            {error}
+          </div>
+        )}
+
+        {/* Output */}
+        {(prompt || loading) && (
+          <section className="animate-fade-up mt-10">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-medium text-foreground">Your forged prompt</h2>
+              {prompt && !loading && (
+                <button
+                  onClick={copyPrompt}
+                  className="rounded-md border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent"
+                >
+                  {copied ? "Copied!" : "Copy prompt"}
+                </button>
+              )}
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <p className="font-mono-output text-sm leading-relaxed whitespace-pre-wrap text-card-foreground">
+                {prompt}
+                {loading && <span className="animate-blink text-primary">▍</span>}
+              </p>
+            </div>
+            {!loading && prompt && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Paste this into ChatGPT, Claude, Gemini or any other AI — it's ready to go.
+              </p>
+            )}
+          </section>
+        )}
+
+        <footer className="mt-auto pt-16 text-center text-xs text-muted-foreground">
+          Rough idea in → perfect prompt out.
+        </footer>
+      </div>
     </div>
   );
 }
