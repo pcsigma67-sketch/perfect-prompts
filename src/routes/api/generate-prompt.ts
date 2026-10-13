@@ -16,9 +16,11 @@ export const Route = createFileRoute("/api/generate-prompt")({
     handlers: {
       POST: async ({ request }) => {
         let idea = "";
+        let langNote = "";
         try {
           const body = await request.json();
           idea = typeof body?.idea === "string" ? body.idea.trim() : "";
+          if (body?.lang === "ar") langNote = "\n\nWrite the final prompt in Arabic.";
         } catch {
           idea = "";
         }
@@ -39,7 +41,7 @@ export const Route = createFileRoute("/api/generate-prompt")({
           { baseURL: "https://ai.gateway.lovable.dev/v1", apiKey, model: "openai/gpt-6-astra" },
           [
             { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: `Here is my rough idea:\n\n${idea}` },
+            { role: "user", content: `Here is my rough idea:\n\n${idea}${langNote}` },
           ],
         );
 
