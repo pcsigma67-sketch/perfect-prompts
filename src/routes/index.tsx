@@ -122,153 +122,131 @@ function Index() {
     }
   }
 
+  const ready = !!prompt && !loading;
+
   return (
     <div className="bg-grid min-h-screen">
-      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 py-10 sm:px-6 sm:py-16">
-        {/* Header */}
+      <nav className="mx-auto flex w-full max-w-4xl items-center justify-between px-4 pt-6 sm:px-6">
+        <span className="font-display text-2xl">Prompt<span className="italic text-primary">Forge</span></span>
+        <a href="#about" className="text-sm text-muted-foreground transition-colors hover:text-foreground">About</a>
+      </nav>
+      <div className="mx-auto flex w-full max-w-3xl flex-col px-4 py-12 sm:px-6 sm:py-20">
         <header className="animate-fade-up text-center">
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            <span className="inline-block h-2 w-2 rounded-full bg-primary" />
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs font-medium tracking-widest text-muted-foreground uppercase">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
             AI Prompt Builder
           </div>
-          <h1 className="font-display text-4xl font-bold tracking-tight sm:text-6xl">
-            Prompt<span className="text-primary text-glow">Forge</span>
+          <h1 className="font-display text-5xl leading-[1.05] tracking-tight sm:text-7xl">
+            Turn rough ideas into <span className="italic text-primary">perfect prompts</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Tell me what you want an AI to do — in your own messy words — and I'll forge it into a
-            clear, professional prompt you can use anywhere.
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+            Describe what you want an AI to do in your own words. PromptForge refines it into a clear,
+            structured prompt you can use anywhere.
           </p>
         </header>
 
-        {/* Input */}
-        <section className="animate-fade-up mt-10" style={{ animationDelay: "0.1s" }}>
-          <label htmlFor="idea" className="mb-2 block text-sm font-medium text-foreground">
-            Your rough idea
-          </label>
+        <section className="glass animate-fade-up mt-12 rounded-2xl border border-border p-5 sm:p-6" style={{ animationDelay: "0.1s" }}>
+          <label htmlFor="idea" className="mb-3 block text-sm font-semibold text-foreground">Your idea</label>
           <textarea
             id="idea"
             value={idea}
             onChange={(e) => setIdea(e.target.value)}
             placeholder="e.g. I want an AI that helps me plan my weekly meals but I hate cooking complicated stuff..."
-            rows={4}
+            rows={5}
             maxLength={4000}
-            className="w-full resize-none rounded-xl border border-input bg-card p-4 text-base text-card-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/30 focus:outline-none"
+            className="w-full resize-none rounded-xl border border-input bg-background/60 p-4 text-base leading-relaxed text-foreground placeholder:text-muted-foreground/70 transition focus:border-primary/60 focus:ring-4 focus:ring-ring/15 focus:outline-none"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) generate();
             }}
           />
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-xs text-muted-foreground">Ctrl + Enter to generate</span>
             {loading ? (
-              <button
-                onClick={stop}
-                className="rounded-lg border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-accent"
-              >
+              <button onClick={stop} className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-accent">
                 Stop
               </button>
             ) : (
               <button
                 onClick={generate}
                 disabled={!idea.trim()}
-                className="glow-primary rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+                className="glow-primary rounded-full bg-primary px-7 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none disabled:hover:translate-y-0"
               >
-                Forge my prompt
+                Forge my prompt →
               </button>
             )}
-            <span className="text-xs text-muted-foreground">Ctrl + Enter to generate</span>
-          </div>
-
-          {/* Examples */}
-          <div className="mt-6">
-            <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-              Try an example
-            </p>
-            <div className="flex flex-col gap-2">
-              {EXAMPLES.map((example) => (
-                <button
-                  key={example}
-                  onClick={() => setIdea(example)}
-                  className="rounded-lg border border-border bg-card px-4 py-2.5 text-left text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
-                >
-                  {example}
-                </button>
-              ))}
-            </div>
           </div>
         </section>
 
-        {/* Error */}
-        {error && (
-          <div className="mt-8 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive-foreground">
-            {error}
+        <div className="animate-fade-up mt-6" style={{ animationDelay: "0.2s" }}>
+          <p className="mb-3 text-xs font-medium tracking-widest text-muted-foreground uppercase">Try an example</p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {EXAMPLES.map((example) => (
+              <button
+                key={example}
+                onClick={() => setIdea(example)}
+                className="rounded-xl border border-border bg-card/40 px-4 py-3 text-left text-sm leading-snug text-muted-foreground transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:text-foreground"
+              >
+                {example}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {error && (
+          <div className="mt-8 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive-foreground">{error}</div>
         )}
 
-        {/* Output */}
         {(prompt || loading) && (
-          <section className="animate-fade-up mt-10">
-            <div className="mb-2 flex items-center justify-between">
-              <h2 className="text-sm font-medium text-foreground">Your forged prompt</h2>
-              {prompt && !loading && (
-                <button
-                  onClick={copyPrompt}
-                  className="rounded-md border border-border bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:bg-accent"
-                >
-                  {copied ? "Copied!" : "Copy prompt"}
-                </button>
-              )}
+          <section className="glass animate-fade-up mt-10 rounded-2xl border border-border p-5 sm:p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <span className={`inline-block h-2 w-2 rounded-full ${loading ? "animate-pulse bg-muted-foreground" : "bg-primary"}`} />
+                {loading ? "Writing your prompt…" : "Your prompt is ready"}
+              </h2>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-background/60 p-5">
               <p className="font-mono-output text-sm leading-relaxed whitespace-pre-wrap text-card-foreground">
                 {prompt}
                 {loading && <span className="animate-blink text-primary">▍</span>}
               </p>
             </div>
-            {!loading && prompt && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Paste this into ChatGPT, Claude, Gemini or any other AI — it's ready to go.
-              </p>
+            {ready && (
+              <div className="animate-fade-up mt-5 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">Paste it into ChatGPT, Claude, Gemini or any AI.</p>
+                <button
+                  onClick={copyPrompt}
+                  className="glow-primary inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
+                >
+                  {copied ? "✓ Copied to clipboard" : "Copy the prompt"}
+                </button>
+              </div>
             )}
           </section>
         )}
 
-        <footer className="mt-auto pt-16">
-          <div className="animate-fade-up rounded-xl border border-border bg-card p-6 text-center">
-            <h2 className="font-display text-sm font-semibold tracking-wide text-foreground uppercase">
-              About PromptForge
-            </h2>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-              PromptForge was designed and built by <span className="font-medium text-foreground">Ahmad Zaxo</span>, a
-              high school student with a passion for AI — turning rough, everyday ideas into prompts that actually work.
+        <footer id="about" className="mt-auto pt-24">
+          <div className="glass animate-fade-up rounded-2xl border border-border p-8 text-center">
+            <p className="text-xs font-medium tracking-widest text-primary uppercase">About</p>
+            <h2 className="font-display mt-2 text-3xl">Made by Ahmad Zaxo</h2>
+            <p className="mx-auto mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
+              I'm a high school student with a passion for AI. Honestly, I was bored — so I built this.
+              PromptForge turns rough, everyday ideas into prompts that actually work.
             </p>
-            <div className="mt-4 flex items-center justify-center gap-2">
-              <a
-                href="https://instagram.com/4hmadzaxo7"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-border bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:border-primary/50 hover:bg-accent"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-4 w-4"
-                  aria-hidden="true"
-                >
-                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-                </svg>
-                @4hmadzaxo7
-              </a>
-            </div>
+            <a
+              href="https://instagram.com/4hmadzaxo7"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-5 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:border-primary/50 hover:bg-accent"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+              </svg>
+              @4hmadzaxo7
+            </a>
           </div>
-          <p className="mt-6 pb-2 text-center text-xs text-muted-foreground">
-            Rough idea in → perfect prompt out.
-          </p>
+          <p className="mt-8 pb-2 text-center text-xs text-muted-foreground">© PromptForge · Rough idea in, perfect prompt out.</p>
         </footer>
       </div>
     </div>
