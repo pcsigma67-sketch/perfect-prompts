@@ -20,12 +20,20 @@ export const Route = createFileRoute("/api/generate-prompt")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const STYLE_NOTES: Record<string, string> = {
+          professional: "\n\nStyle: write the prompt in a polished, professional, business-like tone.",
+          creative: "\n\nStyle: make the prompt imaginative and creative, encouraging original and vivid output.",
+          simple: "\n\nStyle: keep the prompt short, simple and easy to understand — no jargon.",
+          detailed: "\n\nStyle: make the prompt very detailed and thorough, covering edge cases and output structure.",
+        };
         let idea = "";
         let langNote = "";
+        let styleNote = "";
         try {
           const body = await request.json();
           idea = typeof body?.idea === "string" ? body.idea.trim() : "";
           if (body?.lang === "ar") langNote = "\n\nWrite the final prompt in Arabic.";
+          if (typeof body?.style === "string") styleNote = STYLE_NOTES[body.style] ?? "";
         } catch {
           idea = "";
         }
@@ -54,7 +62,7 @@ export const Route = createFileRoute("/api/generate-prompt")({
           { baseURL: "https://ai.gateway.lovable.dev/v1", apiKey, model: "openai/gpt-6-astra" },
           [
             { role: "system", content: SYSTEM_PROMPT },
-            { role: "user", content: `Here is my rough idea:\n\n${idea}${langNote}` },
+            { role: "user", content: `Here is my rough idea:\n\n${idea}${langNote}${styleNote}` },
           ],
         );
 

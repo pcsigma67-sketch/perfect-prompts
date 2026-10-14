@@ -25,8 +25,9 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Settings = { lang: Lang; sound: AmbientKind; volume: number; motion: boolean };
-const DEFAULTS: Settings = { lang: "en", sound: "off", volume: 0.5, motion: true };
+type PromptStyle = "professional" | "creative" | "simple" | "detailed";
+type Settings = { lang: Lang; sound: AmbientKind; volume: number; motion: boolean; style: PromptStyle };
+const DEFAULTS: Settings = { lang: "en", sound: "off", volume: 0.5, motion: true, style: "professional" };
 
 function loadSettings(): Settings | null {
   try {
@@ -59,7 +60,7 @@ function Index() {
     setHydrated(true);
   }, []);
 
-  const { lang, sound, volume, motion } = settings;
+  const { lang, sound, volume, motion, style } = settings;
   const t = T[lang];
 
   function update(patch: Partial<Settings>) {
@@ -103,7 +104,7 @@ function Index() {
       const res = await fetch("/api/generate-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: idea.trim(), lang }),
+        body: JSON.stringify({ idea: idea.trim(), lang, style }),
         signal: controller.signal,
       });
 
@@ -197,6 +198,20 @@ function Index() {
         <span className="font-display text-2xl" dir="ltr">Prompt<span className="italic text-primary">Forge</span></span>
         <div className="flex items-center gap-5">
           <a href="#about" className="link-underline text-sm text-muted-foreground hover:text-foreground">{t.about}</a>
+          <a
+            href="https://instagram.com/4hmadzaxo7"
+            target="_blank"
+            rel="noopener noreferrer"
+            dir="ltr"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+              <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+              <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+            </svg>
+            <span className="hidden sm:inline">@4hmadzaxo7</span>
+          </a>
           <button
             onClick={() => setSettingsOpen(true)}
             className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -288,6 +303,23 @@ function Index() {
 
         <section className="panel animate-fade-up mt-12 rounded-2xl border border-border p-5 sm:p-6" style={{ animationDelay: "0.24s" }}>
           <label htmlFor="idea" className="mb-3 block text-sm font-semibold text-foreground">{t.yourIdea}</label>
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.style}:</span>
+            {([
+              ["professional", t.styleProfessional],
+              ["creative", t.styleCreative],
+              ["simple", t.styleSimple],
+              ["detailed", t.styleDetailed],
+            ] as [PromptStyle, string][]).map(([v, label]) => (
+              <button
+                key={v}
+                onClick={() => update({ style: v })}
+                className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${style === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 text-muted-foreground hover:text-foreground"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <textarea
             id="idea"
             value={idea}
