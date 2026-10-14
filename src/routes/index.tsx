@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { T, type Lang } from "@/lib/i18n";
+import { T, type Lang, RTL_LANGS, LANG_OPTIONS } from "@/lib/i18n";
 import { playAmbient, setVolume, type AmbientKind } from "@/lib/ambient";
 
 export const Route = createFileRoute("/")({
@@ -251,7 +251,7 @@ function Index() {
             <p className="mt-2 text-sm text-muted-foreground">{t.welcomeSub}</p>
 
             <p className="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.language}</p>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {LANG_OPTIONS.map(([v, label]) => (
                 <button
                   key={v}
@@ -476,7 +476,7 @@ function SettingRow({ label, children }: { label: string; children: React.ReactN
 
 function Segmented({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: [string, string][] }) {
   return (
-    <div className="flex gap-1 rounded-full border border-border bg-background/50 p-1">
+    <div className="flex flex-wrap gap-1 rounded-2xl border border-border bg-background/50 p-1">
       {options.map(([v, label]) => (
         <button
           key={v}
