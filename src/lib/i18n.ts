@@ -46,6 +46,11 @@ export const T = {
     styleSimple: "Simple",
     styleDetailed: "Detailed",
     followInsta: "Follow on Instagram",
+    forAds: "For ads & collaborations",
+    forAdsBody:
+      "Want to advertise here or work together? Send me a message directly on Instagram and I'll get back to you fast.",
+    contactInsta: "Message on Instagram",
+    moreSoon: "More soon",
   },
   ar: {
     about: "من نحن",
@@ -92,5 +97,10 @@ export const T = {
     styleSimple: "بسيط",
     styleDetailed: "مفصّل",
     followInsta: "تابعني على إنستغرام",
+    forAds: "للإعلانات والتعاون",
+    forAdsBody:
+      "هل تريد الإعلان هنا أو التعاون معي؟ راسلني مباشرة على إنستغرام وسأرد عليك بسرعة.",
+    contactInsta: "راسلني على إنستغرام",
+    moreSoon: "المزيد قريبا",
   },
 } as const;

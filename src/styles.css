@@ -158,3 +158,30 @@
 @keyframes drift-3 { to { transform: translate(-60%, -40%) scale(1.3); } }
 @keyframes grid-pan { to { transform: translate(56px, 56px); } }
 @media (prefers-reduced-motion: reduce) { .bg-scene * { animation: none !important; } }
+
+/* ---- click feedback: press + ripple ---- */
+button:not(:disabled) {
+  transition: transform 0.16s ease, color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+button:not(:disabled):active { transform: scale(0.955); }
+button, .tap-host { position: relative; overflow: hidden; }
+.pf-ripple {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  background: color-mix(in oklab, var(--foreground) 22%, transparent);
+  transform: scale(0);
+  opacity: 0.5;
+  animation: pf-ripple 0.55s ease-out forwards;
+}
+@keyframes pf-ripple { to { transform: scale(2.4); opacity: 0; } }
+
+/* ---- "more soon" animated ellipsis ---- */
+.pf-dots span { display: inline-block; animation: pf-dot 1.4s ease-in-out infinite; }
+.pf-dots span:nth-child(2) { animation-delay: 0.18s; }
+.pf-dots span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes pf-dot {
+  0%, 60%, 100% { opacity: 0.25; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) { .pf-dots span { animation: none; opacity: 0.6; } }

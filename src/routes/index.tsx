@@ -60,6 +60,26 @@ function Index() {
     setHydrated(true);
   }, []);
 
+  // Click feedback: spawn a ripple wherever the user taps a button or a marked link.
+  useEffect(() => {
+    function onDown(event: PointerEvent) {
+      const target = event.target as HTMLElement | null;
+      const host = target?.closest?.("button, .tap-host") as HTMLElement | null;
+      if (!host || host.hasAttribute("disabled")) return;
+      const rect = host.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height) * 1.15;
+      const ripple = document.createElement("span");
+      ripple.className = "pf-ripple";
+      ripple.style.width = ripple.style.height = `${size}px`;
+      ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
+      ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
+      host.appendChild(ripple);
+      ripple.addEventListener("animationend", () => ripple.remove());
+    }
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, []);
+
   const { lang, sound, volume, motion, style } = settings;
   const t = T[lang];
 
@@ -203,7 +223,7 @@ function Index() {
             target="_blank"
             rel="noopener noreferrer"
             dir="ltr"
-            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+            className="tap-host inline-flex items-center gap-1.5 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-all hover:border-primary/50 hover:text-foreground"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
               <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
@@ -214,7 +234,7 @@ function Index() {
           </a>
           <button
             onClick={() => setSettingsOpen(true)}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-all hover:text-foreground"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 transition-transform duration-500 hover:rotate-90" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
             {t.settings}
@@ -335,7 +355,7 @@ function Index() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">{t.shortcut}</span>
             {loading ? (
-              <button onClick={stop} className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-accent">{t.stop}</button>
+              <button onClick={stop} className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-all hover:bg-accent">{t.stop}</button>
             ) : (
               <button
                 onClick={generate}
@@ -404,7 +424,7 @@ function Index() {
               target="_blank"
               rel="noopener noreferrer"
               dir="ltr"
-              className="mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-5 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:border-primary/50 hover:bg-accent"
+              className="tap-host mt-6 inline-flex items-center gap-2 rounded-full border border-border bg-secondary px-5 py-2 text-sm font-medium text-secondary-foreground transition-all hover:border-primary/50 hover:bg-accent"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
                 <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
@@ -414,7 +434,31 @@ function Index() {
               @4hmadzaxo7
             </a>
           </div>
-          <p className="mt-8 pb-2 text-center text-xs text-muted-foreground">© PromptForge · {t.footer}</p>
+
+          <div className="panel animate-fade-up mt-6 rounded-2xl border border-border p-7 text-center">
+            <p className="text-xs font-medium tracking-widest text-primary uppercase">{t.forAds}</p>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">{t.forAdsBody}</p>
+            <a
+              href="https://instagram.com/4hmadzaxo7"
+              target="_blank"
+              rel="noopener noreferrer"
+              dir="ltr"
+              className="tap-host mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+              </svg>
+              {t.contactInsta}
+            </a>
+          </div>
+
+          <p className="font-display mt-14 flex items-center justify-center gap-2 text-lg tracking-wide text-muted-foreground">
+            {t.moreSoon}
+            <span className="pf-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span></span>
+          </p>
+          <p className="mt-4 pb-2 text-center text-xs text-muted-foreground">© PromptForge · {t.footer}</p>
         </footer>
       </div>
     </div>
