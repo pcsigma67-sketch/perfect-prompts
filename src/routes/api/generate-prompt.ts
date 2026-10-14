@@ -33,6 +33,8 @@ export const Route = createFileRoute("/api/generate-prompt")({
           const body = await request.json();
           idea = typeof body?.idea === "string" ? body.idea.trim() : "";
           if (body?.lang === "ar") langNote = "\n\nWrite the final prompt in Arabic.";
+          if (body?.lang === "ckb") langNote = "\n\nWrite the final prompt in Central Kurdish (Sorani), using Arabic script.";
+          if (body?.lang === "kmr") langNote = "\n\nWrite the final prompt in Kurdish Badini (Northern Kurdish as spoken in Duhok), using Arabic script.";
           if (typeof body?.style === "string") styleNote = STYLE_NOTES[body.style] ?? "";
         } catch {
           idea = "";

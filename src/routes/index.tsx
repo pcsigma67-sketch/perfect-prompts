@@ -102,7 +102,7 @@ function Index() {
 
   useEffect(() => {
     if (!hydrated) return;
-    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+    document.documentElement.dir = RTL_LANGS.includes(lang) ? "rtl" : "ltr";
     document.documentElement.lang = lang;
   }, [lang, hydrated]);
 
@@ -206,7 +206,7 @@ function Index() {
   const ready = !!prompt && !loading;
 
   return (
-    <div className={`relative min-h-screen overflow-hidden ${lang === "ar" ? "font-arabic" : ""}`}>
+    <div className={`relative min-h-screen overflow-hidden ${RTL_LANGS.includes(lang) ? "font-arabic" : ""}`}>
       <div aria-hidden className={`bg-scene ${motion ? "" : "paused"}`}>
         <span className="blob blob-1" />
         <span className="blob blob-2" />
@@ -252,7 +252,7 @@ function Index() {
 
             <p className="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.language}</p>
             <div className="flex gap-2">
-              {([["en", "English"], ["ar", "العربية"]] as [Lang, string][]).map(([v, label]) => (
+              {LANG_OPTIONS.map(([v, label]) => (
                 <button
                   key={v}
                   onClick={() => update({ lang: v })}
@@ -294,7 +294,7 @@ function Index() {
               <button onClick={() => setSettingsOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">{t.close}</button>
             </div>
             <SettingRow label={t.language}>
-              <Segmented value={lang} onChange={(v) => update({ lang: v as Lang })} options={[["en", "English"], ["ar", "العربية"]]} />
+              <Segmented value={lang} onChange={(v) => update({ lang: v as Lang })} options={LANG_OPTIONS} />
             </SettingRow>
             <SettingRow label={t.sound}>
               <Segmented value={sound} onChange={(v) => chooseSound(v as AmbientKind)} options={[["off", t.off], ["rain", t.rain], ["fire", t.fire]]} />
