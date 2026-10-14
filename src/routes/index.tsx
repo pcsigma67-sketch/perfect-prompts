@@ -25,8 +25,9 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type Settings = { lang: Lang; sound: AmbientKind; volume: number; motion: boolean };
-const DEFAULTS: Settings = { lang: "en", sound: "off", volume: 0.5, motion: true };
+type PromptStyle = "professional" | "creative" | "simple" | "detailed";
+type Settings = { lang: Lang; sound: AmbientKind; volume: number; motion: boolean; style: PromptStyle };
+const DEFAULTS: Settings = { lang: "en", sound: "off", volume: 0.5, motion: true, style: "professional" };
 
 function loadSettings(): Settings | null {
   try {
@@ -59,7 +60,7 @@ function Index() {
     setHydrated(true);
   }, []);
 
-  const { lang, sound, volume, motion } = settings;
+  const { lang, sound, volume, motion, style } = settings;
   const t = T[lang];
 
   function update(patch: Partial<Settings>) {
@@ -103,7 +104,7 @@ function Index() {
       const res = await fetch("/api/generate-prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea: idea.trim(), lang }),
+        body: JSON.stringify({ idea: idea.trim(), lang, style }),
         signal: controller.signal,
       });
 
