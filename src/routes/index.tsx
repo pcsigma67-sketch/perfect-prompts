@@ -80,6 +80,17 @@ function Index() {
     return () => document.removeEventListener("pointerdown", onDown);
   }, []);
 
+  // Low-power devices get a lighter background (no heavy blur effects).
+  useEffect(() => {
+    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
+    const lite =
+      (nav.hardwareConcurrency ?? 8) <= 4 ||
+      (nav.deviceMemory ?? 8) <= 4 ||
+      nav.connection?.saveData === true ||
+      window.matchMedia("(max-width: 768px)").matches;
+    document.documentElement.classList.toggle("lite", lite);
+  }, []);
+
   const { lang, sound, volume, motion, style } = settings;
   const t = T[lang];
 
