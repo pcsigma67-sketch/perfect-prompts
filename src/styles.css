@@ -185,3 +185,12 @@ button, .tap-host { position: relative; overflow: hidden; }
   30% { opacity: 1; transform: translateY(-3px); }
 }
 @media (prefers-reduced-motion: reduce) { .pf-dots span { animation: none; opacity: 0.6; } }
+
+/* ---- performance: lighter visuals on low-power / small devices ---- */
+.bg-scene .blob { filter: blur(70px); transform: translateZ(0); }
+.lite .bg-scene .blob { filter: none; opacity: 0.22; background: radial-gradient(circle, var(--primary) 0%, transparent 65%); }
+.lite .bg-scene .blob-2 { background: radial-gradient(circle, oklch(0.55 0.09 250) 0%, transparent 65%); }
+.lite .bg-scene .blob-3 { display: none; }
+.lite .bg-lines { mask-image: none; animation-duration: 20s; }
+.lite .panel, .lite .glass { backdrop-filter: none; background: var(--card); }
+.lite * { box-shadow: none; }
