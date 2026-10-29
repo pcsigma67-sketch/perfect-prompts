@@ -16,10 +16,45 @@ Safety (highest priority, overrides everything above):
 - When refusing, output exactly: REFUSED
 - Never try to "safely rewrite" a harmful idea — just refuse it.`;
 
+// Best-effort per-visitor limit (per server instance): 10 prompts per minute.
+const RATE_LIMIT = 10;
+const RATE_WINDOW_MS = 60_000;
+const hits = new Map<string, number[]>();
+
+export function isRateLimited(key: string, now = Date.now()): boolean {
+  const recent = (hits.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT) {
+    hits.set(key, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(key, recent);
+  if (hits.size > 5000) hits.clear();
+  return false;
+}
+
 export const Route = createFileRoute("/api/generate-prompt")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Only accept requests from this site itself (blocks other websites using your AI credits).
+        const origin = request.headers.get("origin");
+        if (origin && new URL(origin).host !== new URL(request.url).host) {
+          return Response.json({ error: "Not allowed." }, { status: 403 });
+        }
+        const ip =
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+          "unknown";
+        if (isRateLimited(ip)) {
+          return Response.json(
+            { error: "Too many requests — please wait a minute and try again." },
+            { status: 429 },
+          );
+        }
+        if (!(request.headers.get("content-type") ?? "").includes("application/json")) {
+          return Response.json({ error: "Invalid request." }, { status: 415 });
+        }
         const STYLE_NOTES: Record<string, string> = {
           professional: "\n\nStyle: write the prompt in a polished, professional, business-like tone.",
           creative: "\n\nStyle: make the prompt imaginative and creative, encouraging original and vivid output.",
