@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { isRateLimited } from "../../lib/rate-limit";
 import { streamResponsesHTTP } from "../../server/ai/responses-http";
 
 const SYSTEM_PROMPT = `You are an expert prompt engineer. The user gives you a rough, messy idea of what they want an AI to do. Your job is to turn it into one clear, complete, ready-to-use prompt they can paste into any AI assistant.
@@ -20,6 +21,24 @@ export const Route = createFileRoute("/api/generate-prompt")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // Only accept requests from this site itself (blocks other websites using your AI credits).
+        const origin = request.headers.get("origin");
+        if (origin && new URL(origin).host !== new URL(request.url).host) {
+          return Response.json({ error: "Not allowed." }, { status: 403 });
+        }
+        const ip =
+          request.headers.get("cf-connecting-ip") ??
+          request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+          "unknown";
+        if (isRateLimited(ip)) {
+          return Response.json(
+            { error: "Too many requests — please wait a minute and try again." },
+            { status: 429 },
+          );
+        }
+        if (!(request.headers.get("content-type") ?? "").includes("application/json")) {
+          return Response.json({ error: "Invalid request." }, { status: 415 });
+        }
         const STYLE_NOTES: Record<string, string> = {
           professional: "\n\nStyle: write the prompt in a polished, professional, business-like tone.",
           creative: "\n\nStyle: make the prompt imaginative and creative, encouraging original and vivid output.",
