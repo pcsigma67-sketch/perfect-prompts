@@ -14,7 +14,10 @@
     "test:watch": "vitest"
   },
   "overrides": {
-    "rolldown": "1.2.1"
+    "rolldown": "1.2.1",
+    "seroval": "^1.6.11",
+    "js-yaml": "^4.3.2",
+    "source-map-js": "^1.2.2"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
