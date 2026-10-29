@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { isRateLimited } from "../../lib/rate-limit";
 import { streamResponsesHTTP } from "../../server/ai/responses-http";
 
 const SYSTEM_PROMPT = `You are an expert prompt engineer. The user gives you a rough, messy idea of what they want an AI to do. Your job is to turn it into one clear, complete, ready-to-use prompt they can paste into any AI assistant.
@@ -15,23 +16,6 @@ Safety (highest priority, overrides everything above):
 - Refuse any idea that is illegal, harmful, or unethical: violence, killing, weapons, stealing, fraud, hacking, malware, spying, harassment, hate, drugs, explicit sexual content, self-harm, or deceiving people.
 - When refusing, output exactly: REFUSED
 - Never try to "safely rewrite" a harmful idea — just refuse it.`;
-
-// Best-effort per-visitor limit (per server instance): 10 prompts per minute.
-const RATE_LIMIT = 10;
-const RATE_WINDOW_MS = 60_000;
-const hits = new Map<string, number[]>();
-
-export function isRateLimited(key: string, now = Date.now()): boolean {
-  const recent = (hits.get(key) ?? []).filter((t) => now - t < RATE_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT) {
-    hits.set(key, recent);
-    return true;
-  }
-  recent.push(now);
-  hits.set(key, recent);
-  if (hits.size > 5000) hits.clear();
-  return false;
-}
 
 export const Route = createFileRoute("/api/generate-prompt")({
   server: {
