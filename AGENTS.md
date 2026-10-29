@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Security headers are added in src/server.ts and the prompt API enforces same-origin + a per-IP rate limit (src/lib/rate-limit.ts); keep both when touching those files — they protect the AI credits.
