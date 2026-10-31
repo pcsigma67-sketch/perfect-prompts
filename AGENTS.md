@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Security headers are added in src/server.ts and the prompt API enforces same-origin + a per-IP rate limit (src/lib/rate-limit.ts); keep both when touching those files — they protect the AI credits.
+- Use CooldownButton for page actions to centralize per-button cooldown timing and preserve layout while controls are hidden.
+- Keep background movement to one transform-only grid layer without blur or backdrop filters; batch streamed text updates to reduce low-power rendering work.
