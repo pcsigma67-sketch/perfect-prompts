@@ -20,6 +20,7 @@ export const CooldownButton = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         variant="ghost"
         className={cn("h-auto whitespace-normal", className, coolingDown && "invisible")}
+        data-cooling-down={coolingDown || undefined}
         disabled={disabled || coolingDown}
         onClick={(event) => {
           if (locked.current || disabled) return;

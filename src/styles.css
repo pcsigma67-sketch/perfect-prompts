@@ -152,6 +152,7 @@
 button:not(:disabled) { transition: transform 0.16s ease, color 0.2s, background-color 0.2s, border-color 0.2s; }
 button:not(:disabled):active { transform: scale(0.98); }
 button { position: relative; }
+button[data-cooling-down] { visibility: hidden !important; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
