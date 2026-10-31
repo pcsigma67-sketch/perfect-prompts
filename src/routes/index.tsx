@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { CooldownButton } from "@/components/cooldown-button";
 import { T, type Lang, RTL_LANGS, LANG_OPTIONS } from "@/lib/i18n";
 import { playAmbient, setVolume, type AmbientKind } from "@/lib/ambient";
 
@@ -60,37 +61,6 @@ function Index() {
     setHydrated(true);
   }, []);
 
-  // Click feedback: spawn a ripple wherever the user taps a button or a marked link.
-  useEffect(() => {
-    function onDown(event: PointerEvent) {
-      const target = event.target as HTMLElement | null;
-      const host = target?.closest?.("button, .tap-host") as HTMLElement | null;
-      if (!host || host.hasAttribute("disabled")) return;
-      const rect = host.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height) * 1.15;
-      const ripple = document.createElement("span");
-      ripple.className = "pf-ripple";
-      ripple.style.width = ripple.style.height = `${size}px`;
-      ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
-      ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
-      host.appendChild(ripple);
-      ripple.addEventListener("animationend", () => ripple.remove());
-    }
-    document.addEventListener("pointerdown", onDown);
-    return () => document.removeEventListener("pointerdown", onDown);
-  }, []);
-
-  // Low-power devices get a lighter background (no heavy blur effects).
-  useEffect(() => {
-    const nav = navigator as Navigator & { deviceMemory?: number; connection?: { saveData?: boolean } };
-    const lite =
-      (nav.hardwareConcurrency ?? 8) <= 4 ||
-      (nav.deviceMemory ?? 8) <= 4 ||
-      nav.connection?.saveData === true ||
-      window.matchMedia("(max-width: 768px)").matches;
-    document.documentElement.classList.toggle("lite", lite);
-  }, []);
-
   const { lang, sound, volume, motion, style } = settings;
   const t = T[lang];
 
@@ -109,7 +79,22 @@ function Index() {
   useEffect(() => {
     if (!hydrated) return;
     playAmbient(sound, volume);
-  }, [sound, volume, hydrated]);
+    return () => playAmbient("off", 0);
+  }, [sound, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) setVolume(volume);
+  }, [volume, hydrated]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      document.documentElement.classList.toggle("page-hidden", document.hidden);
+      if (document.hidden) playAmbient("off", 0);
+      else if (sound !== "off") playAmbient(sound, volume);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [sound, volume]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -130,6 +115,13 @@ function Index() {
 
     const controller = new AbortController();
     abortRef.current = controller;
+
+    let accumulated = "";
+    let renderTimer: ReturnType<typeof setTimeout> | null = null;
+    const flush = () => {
+      renderTimer = null;
+      setPrompt(accumulated);
+    };
 
     try {
       const res = await fetch("/api/generate-prompt", {
@@ -171,15 +163,13 @@ function Index() {
             try {
               const json = JSON.parse(payload);
               if (json.type === "response.output_text.delta" && typeof json.delta === "string") {
-                setPrompt((prev) => {
-                  const next = prev + json.delta;
-                  if (next.trim().startsWith("REFUSED")) {
-                    setError("Sorry, I can't help with that. PromptForge only creates prompts for legal and ethical ideas.");
-                    controller.abort();
-                    return "";
-                  }
-                  return next;
-                });
+                accumulated += json.delta;
+                if (accumulated.trim().startsWith("REFUSED")) {
+                  accumulated = "";
+                  setError("Sorry, I can't help with that. PromptForge only creates prompts for legal and ethical ideas.");
+                  controller.abort();
+                }
+                if (renderTimer === null) renderTimer = setTimeout(flush, 80);
               } else if (json.type === "response.failed" || json.type === "error") {
                 setError(json?.response?.error?.message ?? json?.message ?? "Generation failed. Please try again.");
               }
@@ -193,6 +183,8 @@ function Index() {
       if (err instanceof Error && err.name === "AbortError") return;
       setError("Could not reach the server. Check your connection and try again.");
     } finally {
+      if (renderTimer !== null) clearTimeout(renderTimer);
+      flush();
       setLoading(false);
       abortRef.current = null;
     }
@@ -219,9 +211,6 @@ function Index() {
   return (
     <div className={`relative min-h-screen overflow-hidden ${RTL_LANGS.includes(lang) ? "font-arabic" : ""}`}>
       <div aria-hidden className={`bg-scene ${motion ? "" : "paused"}`}>
-        <span className="blob blob-1" />
-        <span className="blob blob-2" />
-        <span className="blob blob-3" />
         <div className="bg-lines" />
       </div>
 
@@ -243,19 +232,19 @@ function Index() {
             </svg>
             <span className="hidden sm:inline">@4hmadzaxo7</span>
           </a>
-          <button
+          <CooldownButton
             onClick={() => setSettingsOpen(true)}
             className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3.5 py-1.5 text-sm text-muted-foreground transition-all hover:text-foreground"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 transition-transform duration-500 hover:rotate-90" aria-hidden><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
             {t.settings}
             {sound !== "off" && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />}
-          </button>
+          </CooldownButton>
         </div>
       </nav>
 
       {welcomeOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 p-4 animate-in fade-in">
           <div className="panel w-full max-w-md rounded-2xl border border-border p-8 text-center shadow-2xl animate-in zoom-in-95">
             <span className="font-display text-3xl" dir="ltr">Prompt<span className="italic text-primary">Forge</span></span>
             <h2 className="font-display mt-4 text-2xl">{t.welcomeTitle}</h2>
@@ -264,45 +253,45 @@ function Index() {
             <p className="mt-6 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.language}</p>
             <div className="grid grid-cols-2 gap-2">
               {LANG_OPTIONS.map(([v, label]) => (
-                <button
+                <CooldownButton
                   key={v}
                   onClick={() => update({ lang: v })}
                   className={`flex-1 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${lang === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 text-muted-foreground hover:text-foreground"}`}
                 >
                   {label}
-                </button>
+                </CooldownButton>
               ))}
             </div>
 
             <p className="mt-5 mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.sound}</p>
             <div className="flex gap-2">
               {([["rain", t.rain, "🌧"], ["fire", t.fire, "🔥"], ["off", t.off, "🔇"]] as [AmbientKind, string, string][]).map(([v, label, icon]) => (
-                <button
+                <CooldownButton
                   key={v}
                   onClick={() => chooseSound(v)}
                   className={`flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all ${sound === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 text-muted-foreground hover:text-foreground"}`}
                 >
                   <span className="mr-1" aria-hidden>{icon}</span>{label}
-                </button>
+                </CooldownButton>
               ))}
             </div>
 
-            <button
+            <CooldownButton
               onClick={() => setWelcomeOpen(false)}
               className="mt-7 w-full rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
             >
               {t.welcomeStart}
-            </button>
+            </CooldownButton>
           </div>
         </div>
       )}
 
       {settingsOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-background/60 p-4 pt-20 backdrop-blur-sm animate-in fade-in" onClick={() => setSettingsOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-background/60 p-4 pt-20 animate-in fade-in" onClick={() => setSettingsOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 slide-in-from-top-2" onClick={(e) => e.stopPropagation()}>
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-2xl">{t.settings}</h2>
-              <button onClick={() => setSettingsOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">{t.close}</button>
+              <CooldownButton onClick={() => setSettingsOpen(false)} className="text-sm text-muted-foreground hover:text-foreground">{t.close}</CooldownButton>
             </div>
             <SettingRow label={t.language}>
               <Segmented value={lang} onChange={(v) => update({ lang: v as Lang })} options={LANG_OPTIONS} />
@@ -326,7 +315,7 @@ function Index() {
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
             {t.badge}
           </div>
-          <h1 className="animate-fade-up font-display text-5xl leading-[1.08] tracking-tight sm:text-7xl" style={{ animationDelay: "0.08s" }}>
+          <h1 className="animate-fade-up font-display text-5xl leading-[1.08] tracking-normal sm:text-7xl" style={{ animationDelay: "0.08s" }}>
             {t.h1a} <span className="italic text-primary">{t.h1b}</span>
           </h1>
           <p className="animate-fade-up mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg" style={{ animationDelay: "0.16s" }}>{t.sub}</p>
@@ -342,13 +331,13 @@ function Index() {
               ["simple", t.styleSimple],
               ["detailed", t.styleDetailed],
             ] as [PromptStyle, string][]).map(([v, label]) => (
-              <button
+              <CooldownButton
                 key={v}
                 onClick={() => update({ style: v })}
                 className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all ${style === v ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background/50 text-muted-foreground hover:text-foreground"}`}
               >
                 {label}
-              </button>
+              </CooldownButton>
             ))}
           </div>
           <textarea
@@ -366,16 +355,17 @@ function Index() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <span className="text-xs text-muted-foreground">{t.shortcut}</span>
             {loading ? (
-              <button onClick={stop} className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-all hover:bg-accent">{t.stop}</button>
+              <CooldownButton key="stop" onClick={stop} className="rounded-full border border-border bg-secondary px-6 py-2.5 text-sm font-semibold text-secondary-foreground transition-all hover:bg-accent">{t.stop}</CooldownButton>
             ) : (
-              <button
+              <CooldownButton
+                key="generate"
                 onClick={generate}
                 disabled={!idea.trim()}
                 className="group inline-flex items-center gap-2 rounded-full bg-primary px-7 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
               >
                 {t.forge}
                 <span className="transition-transform group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">→</span>
-              </button>
+              </CooldownButton>
             )}
           </div>
         </section>
@@ -384,13 +374,13 @@ function Index() {
           <p className="mb-3 text-xs font-medium tracking-widest text-muted-foreground uppercase">{t.tryEx}</p>
           <div className="grid gap-2 sm:grid-cols-3">
             {t.examples.map((example) => (
-              <button
+              <CooldownButton
                 key={example}
                 onClick={() => setIdea(example)}
                 className="rounded-xl border border-border bg-card/40 px-4 py-3 text-start text-sm leading-snug text-muted-foreground transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:text-foreground"
               >
                 {example}
-              </button>
+              </CooldownButton>
             ))}
           </div>
         </div>
@@ -414,12 +404,12 @@ function Index() {
             {ready && (
               <div className="animate-fade-up mt-5 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-xs text-muted-foreground">{t.pasteHint}</p>
-                <button
+                <CooldownButton
                   onClick={copyPrompt}
                   className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:-translate-y-0.5"
                 >
                   {copied ? `✓ ${t.copied}` : t.copy}
-                </button>
+                </CooldownButton>
               </div>
             )}
           </section>
@@ -489,13 +479,13 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
   return (
     <div className="flex flex-wrap gap-1 rounded-2xl border border-border bg-background/50 p-1">
       {options.map(([v, label]) => (
-        <button
+        <CooldownButton
           key={v}
           onClick={() => onChange(v)}
           className={`flex-1 rounded-full px-3 py-1.5 text-sm transition-colors ${value === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
         >
           {label}
-        </button>
+        </CooldownButton>
       ))}
     </div>
   );

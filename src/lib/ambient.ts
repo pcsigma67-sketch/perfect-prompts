@@ -5,6 +5,8 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let nodes: AudioNode[] = [];
 let crackleTimer: number | null = null;
+let cachedNoise: Partial<Record<"rain" | "fire", AudioBuffer>> = {};
+const activeCrackles = new Set<() => void>();
 
 function noiseBuffer(c: AudioContext, brown: boolean) {
   const len = c.sampleRate * 4;
@@ -26,6 +28,8 @@ function noiseBuffer(c: AudioContext, brown: boolean) {
 function stopAll() {
   if (crackleTimer) window.clearTimeout(crackleTimer);
   crackleTimer = null;
+  activeCrackles.forEach((cleanup) => cleanup());
+  activeCrackles.clear();
   nodes.forEach((n) => {
     try {
       (n as AudioBufferSourceNode).stop?.();
@@ -42,7 +46,10 @@ export function setVolume(v: number) {
 export function playAmbient(kind: AmbientKind, volume: number) {
   if (typeof window === "undefined") return;
   stopAll();
-  if (kind === "off") return;
+  if (kind === "off") {
+    if (ctx) void ctx.suspend();
+    return;
+  }
   ctx ??= new AudioContext();
   void ctx.resume();
   const c = ctx;
@@ -53,7 +60,8 @@ export function playAmbient(kind: AmbientKind, volume: number) {
   master.gain.value = volume;
 
   const src = c.createBufferSource();
-  src.buffer = noiseBuffer(c, kind === "fire");
+  cachedNoise[kind] ??= noiseBuffer(c, kind === "fire");
+  src.buffer = cachedNoise[kind] ?? null;
   src.loop = true;
 
   if (kind === "rain") {
@@ -76,6 +84,8 @@ export function playAmbient(kind: AmbientKind, volume: number) {
     src.connect(lp).connect(g).connect(master);
     nodes.push(src, lp, g);
     const crackle = () => {
+      const output = master;
+      if (!output) return;
       const len = Math.floor(c.sampleRate * (0.005 + Math.random() * 0.02));
       const b = c.createBuffer(1, len, c.sampleRate);
       const d = b.getChannelData(0);
@@ -87,7 +97,17 @@ export function playAmbient(kind: AmbientKind, volume: number) {
       bp.frequency.value = 1500 + Math.random() * 3000;
       const cg = c.createGain();
       cg.gain.value = 0.2 + Math.random() * 0.5;
-      s.connect(bp).connect(cg).connect(master!);
+      s.connect(bp).connect(cg).connect(output);
+      const cleanup = () => {
+        s.onended = null;
+        try { s.stop(); } catch { /* already stopped */ }
+        s.disconnect();
+        bp.disconnect();
+        cg.disconnect();
+        activeCrackles.delete(cleanup);
+      };
+      activeCrackles.add(cleanup);
+      s.onended = cleanup;
       s.start();
       crackleTimer = window.setTimeout(crackle, 60 + Math.random() * 400);
     };
